@@ -1,0 +1,208 @@
+from pathlib import Path
+import textwrap, json, os, subprocess, sys
+
+out = Path("/mnt/data/Waste_Banks_Interactive_Game")
+out.mkdir(exist_ok=True)
+
+html = r'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waste Banks - Interactive Learning</title>
+<style>
+:root{--green:#087f5b;--mint:#e9f7f1;--lime:#b7e4c7;--yellow:#ffd166;--dark:#173b35;--white:#fff;--red:#e76f51}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#e8f8f2,#fff9df);color:#173b35}
+header{background:linear-gradient(135deg,#087f5b,#20a66a);color:white;padding:28px 20px;text-align:center}
+header h1{margin:0;font-size:clamp(28px,5vw,46px)} header p{margin:8px auto 0;max-width:850px}
+.container{max-width:1050px;margin:auto;padding:20px}.card{background:#fff;border-radius:22px;padding:24px;margin:18px 0;box-shadow:0 8px 25px #00000012}
+.badge{display:inline-block;background:#d8f3dc;color:#087f5b;border-radius:999px;padding:7px 13px;font-weight:bold;font-size:13px}
+h2{color:#087f5b;margin-top:10px}.objective{background:#fff4c2;border-left:6px solid #ffd166;padding:15px;border-radius:12px}
+.video{background:#102a25;color:white;border-radius:18px;overflow:hidden;position:relative;min-height:330px;display:flex;align-items:center;justify-content:center;text-align:center}
+.scene{display:none;width:100%;padding:50px 25px}.scene.active{display:block;animation:fade .6s}
+.scene .icon{font-size:70px}.scene h3{font-size:32px;margin:10px}
+@keyframes fade{from{opacity:.2;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+.video-controls{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+button{border:0;border-radius:12px;padding:11px 18px;background:#087f5b;color:#fff;font-weight:bold;cursor:pointer}
+button:hover{filter:brightness(1.08)} button.secondary{background:#f4a261} button.light{background:#d8f3dc;color:#087f5b}
+textarea,input{width:100%;border:2px solid #cfe8de;border-radius:12px;padding:12px;font-size:15px;margin-top:7px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px}.kw{background:#f8fffc;padding:15px;border-radius:15px}
+.question{background:#f7fbf9;border:1px solid #dcefe8;padding:18px;border-radius:15px;margin:14px 0}
+.option{display:block;margin:8px 0;padding:10px;border-radius:10px;background:white;border:1px solid #dcefe8;cursor:pointer}
+.option:hover{background:#effaf5}.feedback{font-weight:bold;margin-top:8px}.correct{color:#087f5b}.wrong{color:#d94841}
+.score{font-size:32px;font-weight:800;color:#087f5b;text-align:center}.progress{height:12px;background:#dcefe8;border-radius:20px;overflow:hidden}.bar{height:100%;width:0;background:#087f5b;transition:.4s}
+footer{text-align:center;padding:25px;color:#567}
+.small{font-size:13px;color:#567}.download{background:#f4a261}
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">ENGLISH • XI / MA</div>
+  <h1>♻️ WASTE BANKS</h1>
+  <p>Descriptive Text • Love Your Environment • Type of Waste</p>
+</header>
+
+<div class="container">
+<section class="card">
+  <h2>🎯 Learning Objective</h2>
+  <div class="objective">
+    Through the analysis of the multimodal text <b>“Waste Banks”</b>, students can synthesize and critically evaluate main and specific information.
+  </div>
+  <p><b>Indicator 1:</b> Students are able to complete a <b>KWL Chart</b> (Know – Want to Know – Learned) about Waste Banks.</p>
+</section>
+
+<section class="card">
+<h2>🎬 1. Watch & Understand: Waste Banks</h2>
+<div class="video" id="videoBox">
+  <div class="scene active">
+    <div class="icon">🗑️➡️🏦</div><h3>What is a Waste Bank?</h3>
+    <p>A waste bank is a community-based place where people collect, sort, and save recyclable waste.</p>
+  </div>
+  <div class="scene"><div class="icon">♻️</div><h3>Waste Can Have Value</h3>
+    <p>Paper, plastic bottles, cans, and cardboard can be sorted and collected instead of being thrown away.</p>
+  </div>
+  <div class="scene"><div class="icon">👨‍👩‍👧‍👦</div><h3>Community Action</h3>
+    <p>People bring sorted waste to a waste bank. The waste is weighed, recorded, and sometimes exchanged for money or savings.</p>
+  </div>
+  <div class="scene"><div class="icon">🌱</div><h3>Why Does It Matter?</h3>
+    <p>Waste banks can reduce waste, encourage recycling, create community awareness, and support a cleaner environment.</p>
+  </div>
+  <div class="scene"><div class="icon">💚</div><h3>Think Critically</h3>
+    <p>A waste bank is not simply a place for rubbish. It is a system that changes people's habits and gives recyclable waste a useful value.</p>
+  </div>
+</div>
+<div class="video-controls">
+<button onclick="prevScene()">◀ Previous</button><button onclick="playVideo()">▶ Play</button><button onclick="nextScene()">Next ▶</button>
+<button class="download" onclick="downloadVideoText()">⬇ Download Lesson Video</button>
+</div>
+<p class="small" id="videoStatus">Scene 1 of 5</p>
+</section>
+
+<section class="card">
+<h2>🧠 2. KWL Chart — Your Prior Knowledge</h2>
+<p>Complete the chart before and after learning. Write short but meaningful answers.</p>
+<div class="grid">
+<div class="kw"><b>K — KNOW</b><p>What do you already know about waste banks?</p><textarea id="know" rows="5" placeholder="I know that..."></textarea></div>
+<div class="kw"><b>W — WANT TO KNOW</b><p>What do you want to know about waste banks?</p><textarea id="want" rows="5" placeholder="I want to know..."></textarea></div>
+<div class="kw"><b>L — LEARNED</b><p>What have you learned after watching and playing?</p><textarea id="learned" rows="5" placeholder="I learned that..."></textarea></div>
+</div>
+<button onclick="saveKWL()">💾 Save KWL</button>
+<span id="kwlMsg" class="small"></span>
+</section>
+
+<section class="card">
+<h2>♻️ 3. Game: Type of Waste</h2>
+<p>Choose the best category. <b>10 questions</b> — each correct answer = 10 points.</p>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div id="quiz"></div>
+<div class="score" id="score">Score: 0 / 100</div>
+</section>
+
+<section class="card">
+<h2>🔎 4. Critical Thinking: Waste Banks</h2>
+<div class="question">
+<b>1. Why can a waste bank be considered an environmental solution?</b>
+<textarea id="crit1" rows="3" placeholder="Because..."></textarea>
+</div>
+<div class="question">
+<b>2. Which information is MOST important for encouraging students to use a waste bank?</b>
+<textarea id="crit2" rows="3" placeholder="In my opinion..."></textarea>
+</div>
+<div class="question">
+<b>3. Complete the synthesis:</b>
+<p><i>“Waste banks are useful because they combine __________, __________, and __________.”</i></p>
+<textarea id="crit3" rows="2" placeholder="Write three ideas from the lesson..."></textarea>
+</div>
+<button onclick="saveAnswers()">📥 Download My Answers</button>
+</section>
+
+<section class="card">
+<h2>🌱 5. Reflection</h2>
+<textarea id="reflection" rows="4" placeholder="One action I can take to reduce waste at school is..."></textarea>
+<br><br><button onclick="finish()">✅ Finish Learning</button>
+<div id="finishMsg" class="feedback"></div>
+</section>
+</div>
+
+<footer>MAN 3 BOJONEGORO • Love Your Environment ♻️ • Learn • Act • Reflect</footer>
+
+<script>
+const scenes=document.querySelectorAll('.scene');let current=0,timer=null;
+function showScene(){scenes.forEach((s,i)=>s.classList.toggle('active',i===current));document.getElementById('videoStatus').textContent=`Scene ${current+1} of ${scenes.length}`;}
+function nextScene(){current=(current+1)%scenes.length;showScene();}
+function prevScene(){current=(current-1+scenes.length)%scenes.length;showScene();}
+function playVideo(){clearInterval(timer);timer=setInterval(()=>{current++;if(current>=scenes.length){clearInterval(timer);current=scenes.length-1;}showScene();},4500);}
+function downloadVideoText(){
+ const text=`WASTE BANKS — LESSON VIDEO SCRIPT\n\n1. What is a Waste Bank? A community-based place where people collect, sort, and save recyclable waste.\n2. Waste Can Have Value: Paper, plastic bottles, cans, and cardboard can be collected.\n3. Community Action: Waste is weighed, recorded, and sometimes exchanged for money or savings.\n4. Why It Matters: Waste banks can reduce waste and encourage recycling.\n5. Think Critically: A waste bank changes people's habits and gives recyclable waste useful value.`;
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download='Waste_Banks_Lesson_Video_Script.txt';a.click();
+}
+
+const qs=[
+["A plastic bottle","Recyclable","Organic","Hazardous","Residual"],
+["Banana peel","Organic","Recyclable","Electronic","Residual"],
+["Used battery","Hazardous","Organic","Recyclable","Paper"],
+["Cardboard box","Recyclable","Organic","Hazardous","Electronic"],
+["Leftover food","Organic","Recyclable","Hazardous","Electronic"],
+["Old newspaper","Recyclable","Organic","Electronic","Hazardous"],
+["Broken glass","Hazardous","Organic","Recyclable","Food"],
+["Used electronic device","Electronic","Organic","Paper","Recyclable"],
+["Dry leaves","Organic","Electronic","Hazardous","Plastic"],
+["Aluminium can","Recyclable","Organic","Electronic","Hazardous"]
+];
+let score=0,answered=0;
+function renderQuiz(){
+ const q=document.getElementById('quiz'); q.innerHTML='';
+ qs.forEach((item,i)=>{
+  const div=document.createElement('div');div.className='question';
+  div.innerHTML=`<b>${i+1}. What type of waste is <i>${item[0]}</i>?</b>`;
+  item.slice(1).forEach((op,j)=>{
+   const label=document.createElement('label');label.className='option';
+   label.innerHTML=`<input type="radio" name="q${i}" value="${op}" onchange="check(${i},'${op}','${item[1]}',this)"> ${op}`;
+   div.appendChild(label);
+  });
+  const fb=document.createElement('div');fb.id=`fb${i}`;fb.className='feedback';div.appendChild(fb);q.appendChild(div);
+ });
+}
+function check(i,choice,answer,el){
+ if(el.dataset.done)return; el.dataset.done="1"; answered++;
+ if(choice===answer){score+=10;document.getElementById(`fb${i}`).innerHTML='<span class="correct">✓ Correct!</span>';}
+ else document.getElementById(`fb${i}`).innerHTML=`<span class="wrong">✗ Not quite. Correct answer: ${answer}</span>`;
+ document.getElementById('score').textContent=`Score: ${score} / 100`;
+ document.getElementById('bar').style.width=(answered/10*100)+'%';
+}
+function saveKWL(){
+ const data=`WASTE BANKS — KWL CHART\n\nKNOW:\n${know.value}\n\nWANT TO KNOW:\n${want.value}\n\nLEARNED:\n${learned.value}`;
+ download(data,'Waste_Banks_KWL.txt');kwlMsg.textContent=' ✓ KWL saved!';
+}
+function saveAnswers(){
+ const data=`WASTE BANKS — STUDENT ANSWERS\n\nKWL\nKnow: ${know.value}\nWant: ${want.value}\nLearned: ${learned.value}\n\nCritical Thinking\n1. ${crit1.value}\n2. ${crit2.value}\n3. ${crit3.value}\n\nReflection\n${reflection.value}\n\nGame Score: ${score}/100`;
+ download(data,'Waste_Banks_Student_Answers.txt');
+}
+function download(data,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'text/plain'}));a.download=name;a.click();}
+function finish(){finishMsg.innerHTML=`<span class="correct">🎉 Great work! Your game score is ${score}/100. Remember: reduce, reuse, recycle, and act responsibly.</span>`;}
+renderQuiz();
+</script>
+</body></html>'''
+
+path = out/"index.html"
+path.write_text(html, encoding="utf-8")
+
+# Create a simple teacher-facing README
+readme = """WASTE BANKS INTERACTIVE LEARNING
+=================================
+File utama: index.html
+
+Cara menggunakan:
+1. Buka index.html dengan Chrome/Edge.
+2. Bagikan file/folder ini melalui LMS, Google Classroom, Moodle, atau hosting sekolah.
+3. Siswa dapat mengerjakan KWL, game Type of Waste, critical thinking, dan reflection.
+4. Tombol Download My Answers membuat file TXT yang dapat dikirim kembali kepada guru.
+
+Catatan:
+- Video pembuka dibuat sebagai animasi lesson/video-like yang berjalan di halaman sehingga tidak membutuhkan internet.
+- Tombol Download Lesson Video mengunduh naskah video pembelajaran untuk dipakai/direkam sebagai video MP4 jika diperlukan.
+"""
+(out/"README.txt").write_text(readme, encoding="utf-8")
+
+print(f"Folder dibuat: {out}")
+print(f"File utama: {path}")
